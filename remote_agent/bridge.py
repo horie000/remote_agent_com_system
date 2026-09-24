@@ -294,21 +294,8 @@ class BridgeBot(commands.Bot):
                 self.audit.write("turn_started", user_id=ctx.author.id, channel_id=ctx.channel.id, thread_id=self.thread_id)
                 assert self.thread_id is not None
                 self.sessions.save(self.thread_id, has_turn=True)
-                result = await self.server.rpc("turn/start", {
-                    "threadId": self.thread_id,
-                    "input": [{"type": "text", "text": prompt}],
-                    "cwd": str(self.settings.workdir),
-                    "model": self.settings.model,
-                    "approvalPolicy": "untrusted",
-                    "approvalsReviewer": "user",
-                    "sandboxPolicy": {
-                        "type": "readOnly",
-                        "access": {
-                            "type": "restricted",
-                            "readableRoots": [str(self.settings.workdir)],
-                        },
-                    },
-                })
+                self._completed_turns.clear()
+                result = await self.server.rpc("turn/start", self._turn_start_params(self.thread_id, prompt))
                 turn = result.get("turn", {})
                 self.active_turn_id = turn.get("id")
                 if not self.active_turn_id:
@@ -352,6 +339,19 @@ class BridgeBot(commands.Bot):
             raise AppServerError("Codex App Server did not return a thread ID")
         self._verify_policy(response)
         return thread_id
+
+    def _turn_start_params(self, thread_id: str, prompt: str) -> dict[str, Any]:
+        return {
+            "threadId": thread_id,
+            "input": [{"type": "text", "text": prompt}],
+            "cwd": str(self.settings.workdir),
+            "model": self.settings.model,
+            "approvalPolicy": "untrusted",
+            "approvalsReviewer": "user",
+            # Codex 0.156.1 rejects readOnly.access; the app-server read-only sandbox
+            # still blocks writes. The trial's container mount bounds host visibility.
+            "sandboxPolicy": {"type": "readOnly"},
+        }
 
     async def _ensure_thread(self) -> str:
         if self.thread_id:

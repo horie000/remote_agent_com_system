@@ -182,6 +182,16 @@ class CoreTests(unittest.IsolatedAsyncioTestCase):
             server._event_task.cancel()
             await asyncio.gather(server._event_task, return_exceptions=True)
 
+    async def test_turn_start_uses_supported_read_only_sandbox_shape(self) -> None:
+        bot = BridgeBot.__new__(BridgeBot)
+        from types import SimpleNamespace
+
+        bot.settings = SimpleNamespace(workdir=Path("/tmp/project"), model="gpt-6-luna")
+        params = bot._turn_start_params("thread-1", "inspect the project")
+        self.assertEqual(params["sandboxPolicy"], {"type": "readOnly"})
+        self.assertEqual(params["approvalPolicy"], "untrusted")
+        self.assertEqual(params["approvalsReviewer"], "user")
+
     async def test_bridge_policy_check_requires_all_confirmed_settings(self) -> None:
         correct = {"approvalPolicy": "untrusted", "approvalsReviewer": "user", "sandbox": {"type": "readOnly"}}
         BridgeBot._verify_policy(correct)
