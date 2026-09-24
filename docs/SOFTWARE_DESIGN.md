@@ -2,7 +2,7 @@
 
 ## 1. 目的と実装方針
 
-本書は[SPEC.md](SPEC.md)の要件をソフトウェアとして実現する構成、責務、インターフェース、状態遷移、異常処理を定義する。実装担当はGPT-6-Luna。通常の読み取りは制限されたCodex実行環境内で行い、追加権限を要する操作はDiscordの明示承認を得る。
+本書は[SPEC.md](SPEC.md)の要件をソフトウェアとして実現する構成、責務、インターフェース、状態遷移、異常処理を定義する。実装担当はGPT-6-Luna。通常の読み取りは制限されたCodex実行環境内で行い、信頼済みと判定されないコマンドや追加権限を要する操作はDiscordの明示承認を得る。CLI 0.156.1ではapprovalPolicy=untrusted、approvalsReviewer=user、sandbox=read-onlyを指定し、開始・再開時の実効設定を検証する。
 
 このBotが起動するCodex app-serverの会話を管理する。既に別画面で動作中の任意のCodexセッションを自動操作する機能は対象外。試験版では同時実行1件、設定された1サーバー・1チャンネルを扱う。
 
@@ -13,10 +13,10 @@ flowchart LR
     U[別PCの利用者] <-->|指示・応答・承認| D[Discord]
     subgraph H[実行環境: 初回はUbuntuサンドボックス]
         subgraph B[Python Botプロセス]
-            I[Discordアダプタ\n認可・コマンド解釈・長文分割]
-            C[会話コントローラ\n単一ターン・状態・中断]
-            G[承認管理\n操作照合・期限・単回消費]
-            R[App Serverクライアント\nJSON-RPC・イベント配送]
+            I[Discordアダプタ<br/>認可・コマンド解釈・長文分割]
+            C[会話コントローラ<br/>単一ターン・状態・中断]
+            G[承認管理<br/>操作照合・期限・単回消費]
+            R[App Serverクライアント<br/>JSON-RPC・イベント配送]
             S[(会話状態)]
             A[(監査ログ)]
             I <--> C
@@ -26,13 +26,13 @@ flowchart LR
             C <--> S
             G --> A
         end
-        X[Codex app-server\n専用CODEX_HOME]
+        X[Codex app-server<br/>専用CODEX_HOME]
         W[対象作業ディレクトリ]
         R <-->|ローカルstdio| X
-        X -->|通常: read-only\n権限が必要: 承認要求| W
+        X -->|通常: read-only<br/>権限が必要: 承認要求| W
     end
     D <-->|Gateway / HTTPS| I
-    X <-->|Codex認証によるモデル呼出し| M[OpenAI\ngpt-6-luna]
+    X <-->|Codex認証によるモデル呼出し| M[OpenAI<br/>gpt-6-luna]
 ```
 
 BotはDiscordへ接続する。ホスト向けHTTP公開ポートは不要。stdioはBotの子プロセスとの接続だけに用い、遠隔からJSON-RPCを直接呼べる経路は公開しない。
@@ -40,13 +40,13 @@ BotはDiscordへ接続する。ホスト向けHTTP公開ポートは不要。std
 ```mermaid
 flowchart TB
     subgraph WIN[Windowsホスト]
-        REPO[C:\\project\\remote_agent_com_sys\nGit管理する原本]
-        COPY[C:\\project\\ubuntu_sandbox\\remote_agent_com_sys\n試験用コピー]
+        REPO[C:\\project\\remote_agent_com_sys<br/>Git管理する原本]
+        COPY[C:\\project\\ubuntu_sandbox\\remote_agent_com_sys<br/>試験用コピー]
         REPO -->|専用ファイルをコピー| COPY
         subgraph DOCKER[codex-ubuntu22-sandbox: Ubuntu 22.04]
-            APP[/workspace/remote_agent_com_sys\nBotソース]
-            VENV[/home/codex/remote-agent-com-venv\nPython 3.10]
-            CLI[/home/codex/remote-agent-com-tools\nCodex CLI 0.156.1]
+            APP["/workspace/remote_agent_com_sys<br/>Botソース"]
+            VENV["/home/codex/remote-agent-com-venv<br/>Python 3.10"]
+            CLI["/home/codex/remote-agent-com-tools<br/>Codex CLI 0.156.1"]
             AUTH[専用Codex設定・認証]
             APP --> VENV
             APP --> CLI
@@ -181,3 +181,5 @@ Discordトークンを子プロセス環境へ渡さない。認証情報はGit�
 | 低コストモデルで実装 | GPT-6-Lunaが全実装を担当 | 実装計画と作業記録 |
 
 実試験の結果、未実施項目、制約は別の検証記録に残す。本書の予定だけをもって実機試験完了とはしない。
+
+
